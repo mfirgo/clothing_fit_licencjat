@@ -43,7 +43,7 @@ def reindex_column(df, column_name):
             if i != 0:
                 current_new+=1
         result_column.append(current_new)
-    result_df = result_df.rename(columns = {column_name: column_name+"_old"})
+    result_df = result_df.rename(columns = {column_name: column_name+"_original"})
     result_df[column_name]= result_column
     return result_df
 
@@ -85,3 +85,12 @@ def get_train_runttherunway_data():
     if not exists(datapath):
         split_renttherunway_data()
     return pd.read_csv(datapath)
+
+KEPT_STRING = 'fit'
+FIT_STRING = KEPT_STRING
+LARGE_STRING = 'large'
+BIG_STRING = LARGE_STRING
+SMALL_STRING = 'small'
+
+status_to_number = {FIT_STRING: 0, LARGE_STRING: 1, SMALL_STRING: 2}
+number_to_status = {value:key for key, value in status_to_number.items()}
