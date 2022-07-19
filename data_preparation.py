@@ -92,5 +92,10 @@ LARGE_STRING = 'large'
 BIG_STRING = LARGE_STRING
 SMALL_STRING = 'small'
 
+FIT_LABEL = 0
+LARGE_LABEL = 1
+BIG_LABEL = LARGE_LABEL
+SMALL_LABEL = 2
+
 status_to_number = {FIT_STRING: 0, LARGE_STRING: 1, SMALL_STRING: 2}
 number_to_status = {value:key for key, value in status_to_number.items()}
