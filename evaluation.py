@@ -5,6 +5,7 @@ import numpy as np
 
 def create_confusion_matrix(result_df,target_column, prediction_column):
     labels = result_df[target_column].unique()
+    labels.sort()
     confusion_m = pd.DataFrame(confusion_matrix(result_df[target_column], result_df[prediction_column], labels=labels), 
                                 index=['true_'+str(l) for l in labels], 
                                 columns=['predicted_'+str(l) for l in labels])
