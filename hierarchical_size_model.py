@@ -9,15 +9,12 @@ def normal_pdf(mu = 0, sigma = 1, x = 0):
 
 class HierarchicalSizeSimplified:
     def __init__(self, train_data, learning_rate=1):
-        #self.train_original = train_data
-        self.train = train_data
+        self.train = train_data.copy()
         self.learning_rate = learning_rate
         self.iterations = 0 
-        #self.customers = train_data["user_id"].sort_values().unique()
-        #self.articles = train_data["item_id"].sort_values().unique()
-        self.number_of_customers = train_data["user_id"].max()+1#self.customers.size
-        self.number_of_articles = train_data["item_id"].max()+1#self.articles.size
-        self.KEPT, self.BIG, self.SMALL = 0,1,2
+        self.number_of_customers = train_data["user_id"].max()+1 #self.customers.size
+        self.number_of_articles = train_data["item_id"].max()+1 #self.articles.size
+        self.KEPT, self.BIG, self.SMALL = FIT_LABEL, LARGE_LABEL, SMALL_LABEL
         self._init_const()
         self._init_variables()
         self.fill_variables_in_train()
@@ -77,7 +74,7 @@ class HierarchicalSizeSimplified:
         self.mean_mu_c = mean_mu_c*self.learning_rate + self.mean_mu_c*(1-self.learning_rate)
     def _update_and_check_mean_mu_a(self, mean_mu_a):
         self.converged_mean_mu_a = np.allclose(self.mean_mu_a, mean_mu_a)
-        self.mean_mu_a = mean_mu_a*self.learning_rate +self.mean_mu_a*(1-self.learning_rate)
+        self.mean_mu_a = mean_mu_a*self.learning_rate + self.mean_mu_a*(1-self.learning_rate)
     def _update_and_check_variance_mu_a(self, variance_mu_a):
         self.converged_variance_mu_a = np.allclose(self.variance_mu_a, variance_mu_a)
         self.variance_mu_a = variance_mu_a  * self.learning_rate + self.variance_mu_a*(1-self.learning_rate)
@@ -157,11 +154,11 @@ class HierarchicalSizeSimplified:
     def multi_pdfs(self, article, customer, return_status, customer_sizes=np.arange(0,59), n_samples=1000):
         mu_a_samples = np.random.normal(self.mean_mu_a[article], self.variance_mu_a[article], size=n_samples)
         mu_c_samples = np.random.normal(self.mean_mu_c[customer], self.variance_mu_c[customer], size=n_samples)
-        if return_status==FIT_LABEL:
+        if return_status==self.KEPT:
             eta_r_samples = np.zeros(n_samples)
-        elif return_status==LARGE_LABEL:
+        elif return_status==self.BIG:
             eta_r_samples = np.random.normal(self.mean_eta_big, self.variance_eta_big, size=n_samples)
-        elif return_status==SMALL_LABEL:
+        elif return_status==self.SMALL:
             eta_r_samples = np.random.normal(self.mean_eta_small, self.variance_eta_small, size=n_samples)
         else:
             ValueError("unknown return status")

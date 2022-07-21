@@ -1,3 +1,5 @@
 /.ipynb_checkpoints
 /data
 /models
+/clothing-fit-dataset-for-size-recommendation
+/__pycache__

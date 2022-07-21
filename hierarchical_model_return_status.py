@@ -24,6 +24,19 @@ class HierarchicalStatus:
         else:
             return init_w
 
+    def train_model(self,  df=None, lr=0.01, T=100, log_every = 10, return_status_column = "result"):
+        if not self.initialized and df is not None:
+            print("Initializing model...", end=" ")
+            self.initialize_model(df, return_status_column)
+            print("Model initiated")
+            self.prepare_trainset(df, return_status_column) 
+            print("Trainset prepared")
+        for iteration in range(T):
+            self._training_step(lr)
+            if (iteration+1)%log_every==0:
+                print(iteration, self.history[-1])
+        self.w=self.best_w
+
     def initialize_model(self, df, return_status_column = 'result'):
         dummies = pd.get_dummies(df[return_status_column])
         labels = dummies.columns
@@ -45,7 +58,22 @@ class HierarchicalStatus:
         self.initialized = True
         # self.sales_probability_by_fit = sales_by_fit.div(sales_by_fit.sum(axis=1), axis=0)
         # self.sales_probability_by_fit['predicted_result'] = self.sales_probability_by_fit.idxmax(axis=1)
-        
+    
+    def prepare_trainset(self, df, return_status_column ='result'):
+        self.train = df.copy()
+        self.train["original_category"] = self.train["category"]
+        self.train["count_category"] = (self.sales_at_category_level["all_by_category"])[self.train["category"]].values
+        self.train.loc[~self.train["category"].isin(self.kept_categories), "category"] = self.OTHER_CAT
+        self.train["count_category"] = (self.sales_at_category_level["all_by_category"])[self.train["category"]].values
+        self.train["count_return_status_category"] = self.train.apply(
+            lambda row: self.sales_at_category_level[str(row[return_status_column])+"_by_category"][row["category"]], axis=1
+        )
+        self.train["count_article"] = self.sales_at_article_level["all_by_article"][self.train["item_id"]].values
+        self.train["count_return_status_article"] = self.train.apply(
+            lambda row: self.sales_at_article_level[str(row[return_status_column])+"_by_article"][row["item_id"]], axis=1
+        )
+        #self.train["new_category"] = self.train["category"]    
+    
     def _training_step(self, lr):
         derivative, mean_prob = self._compute_w_mean_derivative_and_probability() # mean or sum - but i think mean is better since adjusting learning rate will not be dependent on training set size
         self.history.append({"iter": self.iterations, "w": self.w, "mean_derivative": derivative, "mean_prob": mean_prob})
@@ -72,34 +100,6 @@ class HierarchicalStatus:
                        )
         derivatives = probabilities*logderivatives
         return derivatives.mean(), probabilities.mean()
-
-    def prepare_trainset(self, df, return_status_column ='result'):
-        self.train = df.copy()
-        self.train["original_category"] = self.train["category"]
-        self.train["count_category"] = (self.sales_at_category_level["all_by_category"])[self.train["category"]].values
-        self.train.loc[~self.train["category"].isin(self.kept_categories), "category"] = self.OTHER_CAT
-        self.train["count_category"] = (self.sales_at_category_level["all_by_category"])[self.train["category"]].values
-        self.train["count_return_status_category"] = self.train.apply(
-            lambda row: self.sales_at_category_level[str(row[return_status_column])+"_by_category"][row["category"]], axis=1
-        )
-        self.train["count_article"] = self.sales_at_article_level["all_by_article"][self.train["item_id"]].values
-        self.train["count_return_status_article"] = self.train.apply(
-            lambda row: self.sales_at_article_level[str(row[return_status_column])+"_by_article"][row["item_id"]], axis=1
-        )
-        #self.train["new_category"] = self.train["category"]
-
-    def train_model(self,  df=None, lr=0.01, T=100, log_every = 10, return_status_column = "result"):
-        if not self.initialized and df is not None:
-            print("Initializing model...", end=" ")
-            self.initialize_model(df, return_status_column)
-            print("Model initiated")
-            self.prepare_trainset(df, return_status_column) 
-            print("Trainset prepared")
-        for iteration in range(T):
-            self._training_step(lr)
-            if (iteration+1)%log_every==0:
-                print(iteration, self.history[-1])
-        self.w=self.best_w
         
     def predict(self, df):
         prediction = df.copy()
