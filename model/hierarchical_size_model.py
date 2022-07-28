@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-from data_preparation import FIT_LABEL, LARGE_LABEL, SMALL_LABEL
+from utils.data_preparation import FIT_LABEL, LARGE_LABEL, SMALL_LABEL
 
 def normal_pdf(mu = 0, sigma = 1, x = 0):
     return (np.exp(-0.5*
