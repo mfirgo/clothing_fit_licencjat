@@ -17,12 +17,12 @@ def question(question_text):
 def current_timestamp():
     return time.strftime("%Y%m%d-%H%M%S")
 
-def save_model(model, filename, dir = "models/", add_date=True, extension = "model"):
+def save_model(model, filename, dir = "models/", add_date=True, extension = "model", prevent_overwrite=True):
     if model is not None:
         if add_date:
             filename += current_timestamp()
         filepath = f"{dir}{filename}.{extension}"
-        if exists(filepath):
+        if exists(filepath) and prevent_overwrite:
             if not question(f"file {filepath} already exists. Do you want to overwrite it?"):
                 print("Exiting. Model was not saved.")
                 return
