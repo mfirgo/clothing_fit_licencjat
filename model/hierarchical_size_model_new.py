@@ -24,6 +24,27 @@ class Parameter:
                 f"value: {self.value}"
                )
         return result
+
+    def parameter_dict(self):
+        if isinstance(self.value, (np.ndarray, pd.Series)):
+            return {f"{self.name}_parameter_mean":self.value.mean(),
+                    f"{self.name}_parameter_max" :self.value.max(),
+                    f"{self.name}_parameter_min" :self.value.min(),
+                    f"{self.name}_parameter_var" :self.value.var(),
+                    f"{self.name}_parameter_median":np.median(self.value),
+                    f"{self.name}_parameter_converged":self.isconverged
+                    }
+        else:
+            return {self.name: self.value,
+                    f"{self.name}_parameter_converged":self.isconverged
+                    }
+    def hiperparameters(self):
+        if self.isconstant:
+            return {f"{self.name}_isconstant": self.isconstant}
+        else:
+            return {f"{self.name}_isconstant": self.isconstant,
+                    f"{self.name}_learning_rate": self.learning_rate}
+
     
     def update(self, new_value):
         if not self.isconstant:
@@ -184,7 +205,7 @@ class HierarchicalSize:
         self.update_mu_a()
         self.update_eta_r()
 
-    def fit(self, max_iterations=10000, save_every=1000):
+    def fit(self, max_iterations=10000, save_every=100):
         for i in tqdm(range(max_iterations)):
             self.update()
             history = self.get_variable_parameters_values()
@@ -212,6 +233,12 @@ class HierarchicalSize:
         parameters = {key: param.value for key, param in self.get_parameters().items() if not param.isconstant}
         return parameters
 
+    def get_parameters_stats(self):
+        parameters_stats = {}
+        for param in self.get_parameters().values():
+            if not param.isconstant:
+                parameters_stats.update(param.parameter_dict())
+        return parameters_stats
 
     def load_parameters_values(self, parameters):
         for key, param in parameters:
@@ -248,34 +275,34 @@ class HierarchicalSize:
     ####################
 
     def pdf(self, article, customer, return_status, customer_size, n_samples=1000):
-        mu_a_samples = np.random.normal(self.mean_mu_a[article], self.variance_mu_a[article], size=n_samples)
-        mu_c_samples = np.random.normal(self.mean_mu_c[customer], self.variance_mu_c[customer], size=n_samples)
+        mu_a_samples = np.random.normal(self.mean_mu_a.value[article], self.variance_mu_a.value[article], size=n_samples)
+        mu_c_samples = np.random.normal(self.mean_mu_c.value[customer], self.variance_mu_c.value[customer], size=n_samples)
         if return_status==FIT_LABEL:
-            eta_r_samples = np.zeros(n_samples)
+            eta_r_samples = np.random.normal(self.mean_eta_kept.value, self.variance_eta_kept.value, size=n_samples)
         elif return_status==LARGE_LABEL:
-            eta_r_samples = np.random.normal(self.mean_eta_big, self.variance_eta_big, size=n_samples)
+            eta_r_samples = np.random.normal(self.mean_eta_big.value, self.variance_eta_big.value, size=n_samples)
         elif return_status==SMALL_LABEL:
-            eta_r_samples = np.random.normal(self.mean_eta_small, self.variance_eta_small, size=n_samples)
+            eta_r_samples = np.random.normal(self.mean_eta_small.value, self.variance_eta_small.value, size=n_samples)
         else:
             ValueError("unknown return status")
-        sigma_c_samples = 1/np.random.gamma(self.alpha_sigma_c[customer], 1/self.beta_sigma_c[customer], size=n_samples)
+        sigma_c_samples = 1/np.random.gamma(self.alpha_sigma_c.value[customer], 1/self.beta_sigma_c.value[customer], size=n_samples)
 
         mu_samples = mu_a_samples+mu_c_samples+eta_r_samples
         pdf_values = normal_pdf(mu_samples, sigma_c_samples, customer_size)
         return pdf_values.mean()
 
     def multi_pdfs(self, article, customer, return_status, customer_sizes=np.arange(0,59), n_samples=1000):
-        mu_a_samples = np.random.normal(self.mean_mu_a[article], self.variance_mu_a[article], size=n_samples)
-        mu_c_samples = np.random.normal(self.mean_mu_c[customer], self.variance_mu_c[customer], size=n_samples)
+        mu_a_samples = np.random.normal(self.mean_mu_a.value[article], self.variance_mu_a.value[article], size=n_samples)
+        mu_c_samples = np.random.normal(self.mean_mu_c.value[customer], self.variance_mu_c.value[customer], size=n_samples)
         if return_status==self.KEPT:
-            eta_r_samples = np.zeros(n_samples)
+            eta_r_samples = np.random.normal(self.mean_eta_kept.value, self.variance_eta_kept.value, size=n_samples)
         elif return_status==self.BIG:
-            eta_r_samples = np.random.normal(self.mean_eta_big, self.variance_eta_big, size=n_samples)
+            eta_r_samples = np.random.normal(self.mean_eta_big.value, self.variance_eta_big.value, size=n_samples)
         elif return_status==self.SMALL:
-            eta_r_samples = np.random.normal(self.mean_eta_small, self.variance_eta_small, size=n_samples)
+            eta_r_samples = np.random.normal(self.mean_eta_small.value, self.variance_eta_small.value, size=n_samples)
         else:
             ValueError("unknown return status")
-        sigma_c_samples = 1/np.random.gamma(self.alpha_sigma_c[customer], 1/self.beta_sigma_c[customer], size=n_samples)
+        sigma_c_samples = 1/np.random.gamma(self.alpha_sigma_c.value[customer], 1/self.beta_sigma_c.value[customer], size=n_samples)
 
         mu_samples = mu_a_samples+mu_c_samples+eta_r_samples
         pdf_values = [normal_pdf(mu_samples, sigma_c_samples, customer_size).mean() for customer_size in customer_sizes]

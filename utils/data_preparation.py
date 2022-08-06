@@ -12,6 +12,8 @@ ORIGINAL_RENTTHERUNWAY_FILE = 'renttherunway_final_data.json'
 PROCESSED_MODCLOTH_FILE = 'modcloth.csv'
 PROCESSED_RENTTHERUNWAY_FILE = 'renttherunway.csv'
 
+DEFAULT_RANDOM_STATE=2022
+
 def download_dataset():
     od.download('https://www.kaggle.com/datasets/rmisra/clothing-fit-dataset-for-size-recommendation?select=modcloth_final_data.json')
 
@@ -62,28 +64,40 @@ def preprocess_renttherunway_data():
     df = prepare_renttherunway_df(df)
     df.to_csv(f"{DATA_DIRECTORY}/{PROCESSED_RENTTHERUNWAY_FILE}", index=False)
     
-def get_processed_renttherunway_data():
+def get_processed_renttherunway_data(data_info=None):
     datapath = f"{DATA_DIRECTORY}/{PROCESSED_RENTTHERUNWAY_FILE}"
     if not exists(datapath):
         preprocess_renttherunway_data()
+    if data_info is not None:
+        data_info.update({"datapath":datapath, "dataset":"renttherunway", "dataset_type": "full"})
     return pd.read_csv(datapath)
-        
-def split_renttherunway_data():
+
+def get_renttherunway_dataset_filepath(dataset_type="full", test_size=0.1, random_state=DEFAULT_RANDOM_STATE):
+    if dataset_type=='full':
+        return f"{DATA_DIRECTORY}/{PROCESSED_RENTTHERUNWAY_FILE}"
+    else:
+        return f"{DATA_DIRECTORY}/{dataset_type}_tsize={test_size}_rand={random_state}_{PROCESSED_RENTTHERUNWAY_FILE}"
+
+def split_renttherunway_data(test_size=0.1, random_state=DEFAULT_RANDOM_STATE):
     df = get_processed_renttherunway_data()
-    train, test = train_test_split(df, test_size=0.10, random_state=2022)
-    train.to_csv(f"{DATA_DIRECTORY}/train_{PROCESSED_RENTTHERUNWAY_FILE}", index=False)
-    test.to_csv(f"{DATA_DIRECTORY}/test_{PROCESSED_RENTTHERUNWAY_FILE}", index=False)
+    train, test = train_test_split(df, test_size=test_size, random_state=random_state)
+    train.to_csv(get_renttherunway_dataset_filepath("train", test_size, random_state), index=False)
+    test.to_csv(get_renttherunway_dataset_filepath("test", test_size, random_state), index=False)
 
-def get_test_runttherunway_data():
-    datapath = f"{DATA_DIRECTORY}/test_{PROCESSED_RENTTHERUNWAY_FILE}"
+def get_test_runttherunway_data(test_size=0.1, random_state=DEFAULT_RANDOM_STATE, data_info=None):
+    datapath = get_renttherunway_dataset_filepath("test", test_size, random_state)
     if not exists(datapath):
-        split_renttherunway_data()
+        split_renttherunway_data(test_size=test_size, random_state=random_state)
+    if data_info is not None:
+        data_info.update({"datapath":datapath, "dataset":"renttherunway", "dataset_type":"test", "test_size":test_size, "random_state":random_state})
     return pd.read_csv(datapath)
 
-def get_train_runttherunway_data():
-    datapath = f"{DATA_DIRECTORY}/train_{PROCESSED_RENTTHERUNWAY_FILE}"
+def get_train_runttherunway_data(test_size=0.1, random_state=DEFAULT_RANDOM_STATE, data_info=None):
+    datapath = get_renttherunway_dataset_filepath("train", test_size, random_state)
     if not exists(datapath):
-        split_renttherunway_data()
+        split_renttherunway_data(test_size=test_size, random_state=random_state)
+    if data_info is not None:
+        data_info.update({"datapath":datapath, "dataset":"renttherunway", "dataset_type":"train", "test_size":test_size, "random_state":random_state})
     return pd.read_csv(datapath)
 
 KEPT_STRING = 'fit'
