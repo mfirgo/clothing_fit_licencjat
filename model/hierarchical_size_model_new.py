@@ -16,6 +16,7 @@ class Parameter:
         self.learning_rate = learning_rate
         self.isconverged = isconstant
         self.isconstant = isconstant
+        self.init = "default"
 
     def __str__(self):
         result =  (f"Parameter {self.name}, " +
@@ -38,21 +39,63 @@ class Parameter:
             return {self.name: self.value,
                     f"{self.name}_parameter_converged":self.isconverged
                     }
+                    
     def hiperparameters(self):
-        if self.isconstant:
-            return {f"{self.name}_isconstant": self.isconstant}
-        else:
-            return {f"{self.name}_isconstant": self.isconstant,
-                    f"{self.name}_learning_rate": self.learning_rate}
+        hiperparams_dict = {f"{self.name}_isconstant": self.isconstant,
+                            f"{self.name}_init": self.init,
+                            f"{self.name}_value": self.value}
+        if not self.isconstant:
+            hiperparams_dict[f"{self.name}_learning_rate"]=self.learning_rate
+        return hiperparams_dict
 
+    def initialize(self, init_config):
+        if init_config=="default" or init_config=="custom_value":
+            pass
+        if isinstance(init_config, dict):
+            init_type = init_config["type"]
+            if init_type == "noise":
+                init_config["previous_init"]=self.init
+                scale = init_config["scale"] if "scale" in init_config else 0.1
+                init_config["scale"] = scale
+                noise = np.random.normal(0, scale, self.value.shape if isinstance(self.value, (np.ndarray, pd.Series)) else None)
+                self.value = self.value + noise
+            elif init_type == "uniform":
+                low = init_config["low"] if "low" in init_config else 0
+                init_config["low"] = low
+                high = init_config["high"] if "high" in init_config else 58
+                init_config["high"] = high
+                self.value = np.random.uniform(low, high, self.value.shape if isinstance(self.value, (np.ndarray, pd.Series)) else None)
+            elif init_type == "normal":
+                loc = init_config["loc"] if "loc" in init_config else 12
+                init_config["loc"] = loc
+                scale = init_config["scale"] if "scale" in init_config else 2
+                init_config["scale"] = scale
+                self.value = np.random.normal(loc, scale, self.value.shape if isinstance(self.value, (np.ndarray, pd.Series)) else None)
+            else:
+                raise ValueError("unknown init type {init_type}")
+        else:
+            raise ValueError("unknown init config {init_config}")
+        self.init = init_config
     
+    def change_config(self, config):
+        if f"{self.name}_isconstant" in config:
+            self.isconstant = config[f"{self.name}_isconstant"]
+            self.isconverged = self.isconstant
+        if f"{self.name}_learning_rate" in config:
+            self.learning_rate = config[f"{self.name}_learning_rate"]
+        if f"{self.name}_value" in config:
+            self.value = config[f"{self.name}_value"]
+            self.init = "custom_value"
+        if f"{self.name}_init" in config:
+            self.initialize(config[f"{self.name}_init"])
+
     def update(self, new_value):
         if not self.isconstant:
             self.isconverged = np.allclose(self.value, new_value)
-            self.value = new_value*self.learning_rate + self.value*(1-self.learning_rate)  
-
+            self.value = new_value*self.learning_rate + self.value*(1-self.learning_rate) 
+    
 class HierarchicalSize:
-    def __init__(self, train_data, default_learning_rate=1, max_user_id=None, max_item_id=None, model_name = 'h_size_model'):
+    def __init__(self, train_data, default_learning_rate=1, max_user_id=None, max_item_id=None, model_name = 'h_size_model', config=None):
         self.creation_date = current_timestamp()
         self.model_name = model_name + "_" +self.creation_date+"/"+model_name
         self.default_learning_rate = default_learning_rate
@@ -62,7 +105,11 @@ class HierarchicalSize:
         self._create_parameters()
         self.set_train_data(train_data, max_user_id=max_user_id, max_item_id=max_item_id)
         self._init_parameters()
-        self.fill_variables_in_train()
+        if config is not None:
+            self.change_config(config)
+        else:
+            self.fill_variables_in_train()
+
 
     #######################################
     ## Data and parameter initialization ##
@@ -221,6 +268,21 @@ class HierarchicalSize:
     ##########################
     ## Saving/loading model ##
     ##########################
+    def change_config(self, config):
+        for param in self.get_parameters().values():
+            param.change_config(config)
+        self.fill_variables_in_train()
+
+    def get_model_config(self):
+        model_config = self.get_parameters_config()
+        model_config["model_name"] = self.model_name
+        return model_config
+    
+    def get_parameters_config(self):
+        parameter_config = {}
+        for param in self.get_parameters().values():
+            parameter_config.update(param.hiperparameters())
+        return parameter_config
 
     def get_parameters(self):
         return {key: param for key, param in self.__dict__.items() if isinstance(param, Parameter)}

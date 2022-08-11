@@ -4,6 +4,7 @@ from os.path import exists
 import pandas as pd
 from pathlib import Path
 from sklearn.model_selection import train_test_split
+import warnings
 
 ORIGINAL_DATA_DIRECTORY = 'clothing-fit-dataset-for-size-recommendation'
 DATA_DIRECTORY = 'data'
@@ -72,11 +73,15 @@ def get_processed_renttherunway_data(data_info=None):
         data_info.update({"datapath":datapath, "dataset":"renttherunway", "dataset_type": "full"})
     return pd.read_csv(datapath)
 
-def get_renttherunway_dataset_filepath(dataset_type="full", test_size=0.1, random_state=DEFAULT_RANDOM_STATE):
-    if dataset_type=='full':
-        return f"{DATA_DIRECTORY}/{PROCESSED_RENTTHERUNWAY_FILE}"
+def get_renttherunway_dataset_filepath(dataset_type="full", test_size=0.1, random_state=DEFAULT_RANDOM_STATE, dataset="renttherunway"):
+    if dataset=="renttherunway":
+        base_file = PROCESSED_RENTTHERUNWAY_FILE
     else:
-        return f"{DATA_DIRECTORY}/{dataset_type}_tsize={test_size}_rand={random_state}_{PROCESSED_RENTTHERUNWAY_FILE}"
+        base_file = dataset+".csv"
+    if dataset_type=='full':
+        return f"{DATA_DIRECTORY}/{base_file}"
+    else:
+        return f"{DATA_DIRECTORY}/{dataset_type}_tsize={test_size}_rand={random_state}_{base_file}"
 
 def split_renttherunway_data(test_size=0.1, random_state=DEFAULT_RANDOM_STATE):
     df = get_processed_renttherunway_data()
@@ -99,6 +104,43 @@ def get_train_runttherunway_data(test_size=0.1, random_state=DEFAULT_RANDOM_STAT
     if data_info is not None:
         data_info.update({"datapath":datapath, "dataset":"renttherunway", "dataset_type":"train", "test_size":test_size, "random_state":random_state})
     return pd.read_csv(datapath)
+
+def get_config_from_filepath(filepath):
+    config = {"datapath":filepath}
+    split_filepath = filepath.split("/")[-1].split("_")
+    if len(split_filepath)==4:
+        config["dataset_type"] = split_filepath[0]
+        config["test_size"] = float(split_filepath[1].split("=")[1])
+        config["random_state"] = int(split_filepath[2].split("=")[1])
+        config["dataset"] = split_filepath[-1].split(".")[0]
+    elif len(split_filepath) == 1:
+        config["dataset_type"] = "full"
+        config["dataset"] = split_filepath[-1].split(".")[0]
+    else:
+        warnings.warn(f"Can't parse filepath {filepath}")
+    return config
+        
+def get_datapath_from_config(config):
+    dataset_type = config["dataset_type"] if "dataset_type" in config else "full"
+    test_size = config["test_size"] if "test_size" in config else 0.1
+    random_state = config["random_state"] if "random_state" in config else DEFAULT_RANDOM_STATE
+    dataset = config["dataset"] if "dataset" in config else "renttherunway"
+    return get_renttherunway_dataset_filepath(dataset_type, test_size, random_state, dataset)
+
+def get_data_from_config(config):
+    if "datapath" in config:
+        datapath = config["datapath"]
+        config_from_filepath = get_config_from_filepath(datapath).update(config)
+        new_datapath = get_datapath_from_config(config_from_filepath)
+        if new_datapath != datapath:
+            warnings.warn(f"Datapaths {datapath} and {new_datapath} are different")
+            config["datapath"] = new_datapath
+    else:
+        config["datapath"] = get_datapath_from_config(config)
+    datapath = config["datapath"]
+    if not exists(datapath):
+        raise ValueError(f"File {datapath} does not exist")
+    return pd.read_json(datapath, lines=True)
 
 KEPT_STRING = 'fit'
 FIT_STRING = KEPT_STRING
