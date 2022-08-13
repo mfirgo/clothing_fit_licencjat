@@ -3,6 +3,8 @@ if os.path.basename(os.getcwd())=='tests':
     os.chdir("./..")
 if os.path.basename(os.getcwd())=='experiments':
     os.chdir("./..")
+import sys
+sys.path.append(os.getcwd())
 import wandb
 from model.hierarchical_size_model_new import *
 from utils.experiment import *
