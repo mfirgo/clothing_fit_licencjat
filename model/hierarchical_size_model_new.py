@@ -95,10 +95,11 @@ class Parameter:
             self.value = new_value*self.learning_rate + self.value*(1-self.learning_rate) 
     
 class HierarchicalSize:
-    def __init__(self, train_data, default_learning_rate=1, max_user_id=None, max_item_id=None, model_name = 'h_size_model', config=None):
+    def __init__(self, train_data, default_learning_rate=1, max_user_id=None, max_item_id=None, model_name = 'h_size_with_update_order', config=None):
         self.creation_date = current_timestamp()
         self.model_name = model_name + "_" +self.creation_date+"/"+model_name
         self.default_learning_rate = default_learning_rate
+        self.update_order = ["sigma_c", "mu_c", "mu_a", "eta_r"]
         self.KEPT, self.BIG, self.SMALL = FIT_LABEL, LARGE_LABEL, SMALL_LABEL
         self.history = []
         self.iterations = 0 
@@ -245,12 +246,22 @@ class HierarchicalSize:
         self.mean_eta_kept.update(mean_eta_kept)
         self.fill_variables_eta_r()
         
+    def _update_param(self, param):
+        if param == "sigma_c":
+            self.update_sigma_c()
+        elif param == "mu_c":
+            self.update_mu_c()
+        elif param == "mu_a":
+            self.update_mu_a()
+        elif param == "eta_r":
+            self.update_eta_r()
+        else:
+            raise ValueError(f"parameter {param} is not recognized")
+
     def update(self):
         self.iterations+=1
-        self.update_sigma_c()
-        self.update_mu_c()
-        self.update_mu_a()
-        self.update_eta_r()
+        for param in self.update_order:
+            self._update_param(param)
 
     def fit(self, max_iterations=10000, save_every=100):
         for i in tqdm(range(max_iterations)):
@@ -269,6 +280,8 @@ class HierarchicalSize:
     ## Saving/loading model ##
     ##########################
     def change_config(self, config):
+        if "update_order" in config:
+            self.update_order = config["update_order"]
         for param in self.get_parameters().values():
             param.change_config(config)
         self.fill_variables_in_train()
@@ -276,6 +289,7 @@ class HierarchicalSize:
     def get_model_config(self):
         model_config = self.get_parameters_config()
         model_config["model_name"] = self.model_name
+        model_config["update_order"] = self.update_order
         return model_config
     
     def get_parameters_config(self):
