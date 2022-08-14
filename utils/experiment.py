@@ -23,7 +23,7 @@ def default_config():
         "evaluation_iterations":[1,2,5,10,20,50,100]
         }
 
-def run_experiment(config=None, notes=None, project="clothing-fit", group=None):
+def run_experiment(config=None, notes=None, project="clothing-fit", group=None, finish_if_converged=True):
     if config is None: config=default_config()
     wandb.init(project=project, config=config, notes=notes, group=group)
     if "data_info" not in wandb.config:
@@ -44,6 +44,8 @@ def run_experiment(config=None, notes=None, project="clothing-fit", group=None):
             results = model.predict(test)
             log_values.update(result_stats_size_model(results))
         wandb.log(log_values, step=model.iterations)
+        if finish_if_converged and model.all_converged():
+            break
     if "mean_target_probability" not in log_values:
         results = model.predict(test)
         log_values.update(result_stats_size_model(results))
