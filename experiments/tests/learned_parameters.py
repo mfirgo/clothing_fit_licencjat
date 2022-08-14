@@ -21,10 +21,10 @@ def create_config(mu_c, mu_a, sigma_c, eta_r, config = None):
         config = config.copy()
     config["mean_mu_c_isconstant"], config["variance_mu_c_isconstant"] = mu_c, mu_c
     config["mean_mu_a_isconstant"], config["variance_mu_a_isconstant"] = mu_a, mu_a
-    config["mean_sigma_c_isconstant"], config["variance_sigma_c_isconstant"] = sigma_c, sigma_c
+    config["beta_sigma_c_isconstant"] = sigma_c
     config["mean_eta_small_isconstant"], config["variance_eta_small_isconstant"] = eta_r, eta_r
     config["mean_eta_big_isconstant"], config["variance_eta_big_isconstant"] = eta_r, eta_r
-    return config
+    return config, "".join(['c' if var else 'v' for var in [mu_c, mu_a, sigma_c, eta_r]])
 
 # eta kept is learned
 config = default_config(); config.update({"mean_eta_kept_isconstant":False, "variance_eta_kept_isconstant":False})
@@ -39,5 +39,5 @@ random.shuffle(configs)
 
 # run experiments
 print("Running experiments with different learning parameters")
-for config in configs:
-    run_experiment(config, group="different learning parameters")
+for config, shortened_config in configs:
+    run_experiment(config, group="set_parameters_as_constant", notes=shortened_config)

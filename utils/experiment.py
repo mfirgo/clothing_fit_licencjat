@@ -23,7 +23,8 @@ def default_config():
         "evaluation_iterations":[1,2,5,10,20,50,100]
         }
 
-def run_experiment(config=default_config(), notes=None, project="clothing-fit", group=None):
+def run_experiment(config=None, notes=None, project="clothing-fit", group=None):
+    if config is None: config=default_config()
     wandb.init(project=project, config=config, notes=notes, group=group)
     if "data_info" not in wandb.config:
         data_info = {"train":{}, "test":{}}
@@ -36,14 +37,16 @@ def run_experiment(config=default_config(), notes=None, project="clothing-fit", 
         test = get_data_from_config(data_info["test"])
     model = HierarchicalSize(train, wandb.config.default_learning_rate, config=wandb.config)
     wandb.config.update(model.get_model_config())
-    evaluations=0
     for i in tqdm(range(wandb.config["max_iter"])):
         model.update()
         log_values = model.get_parameters_stats()
-        if i == wandb.config["evaluation_iterations"][evaluations]:
-            evaluations+=1
+        if i in wandb.config["evaluation_iterations"]:
             results = model.predict(test)
             log_values.update(result_stats_size_model(results))
+        wandb.log(log_values, step=model.iterations)
+    if "mean_target_probability" not in log_values:
+        results = model.predict(test)
+        log_values.update(result_stats_size_model(results))
         wandb.log(log_values, step=model.iterations)
     wandb.finish()
     
