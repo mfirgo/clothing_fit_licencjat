@@ -9,8 +9,13 @@ import wandb
 from model.hierarchical_size_model_new import *
 from utils.experiment import *
 import itertools
-import random
-
+import argparse
+parser = argparse.ArgumentParser()
+parser.add_argument('--group', type=str, default="set_update_order")
+parser.add_argument('--notes', type=str, default=None)
+args = parser.parse_args()
+additional_notes = args.notes
+group = args.group
 
 # create configs for different learning parameters
 configs = []
@@ -21,4 +26,4 @@ for element in itertools.permutations(["mu_c", "mu_a", "sigma_c", "eta_r"]):
 # run experiments
 print("Running experiments with different update order")
 for config in configs:
-    run_experiment(config, group="set_update_order")
+    run_experiment(config, group=group, notes=additional_notes)
