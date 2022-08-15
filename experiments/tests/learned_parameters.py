@@ -10,6 +10,13 @@ from model.hierarchical_size_model_new import *
 from utils.experiment import *
 import itertools
 import random
+import argparse
+parser = argparse.ArgumentParser()
+parser.add_argument('--group', type=str, default="set_parameters_as_constants")
+parser.add_argument('--notes', type=str, default=None)
+args = parser.parse_args()
+additional_notes = args.notes
+group = args.group
 
 ####################
 # Helper functions #
@@ -29,7 +36,8 @@ def create_config(mu_c, mu_a, sigma_c, eta_r, config = None):
 # eta kept is learned
 config = default_config(); config.update({"mean_eta_kept_isconstant":False, "variance_eta_kept_isconstant":False})
 print(f"Running experiment with config {config}")
-run_experiment(config, notes="eta kept learned", group="different learning parameters")
+notes = "eta kept learned" + (", "+additional_notes) if additional_notes is not None else ""
+run_experiment(config, notes=notes, group=group)
 
 # create configs for different learning parameters
 configs = []
@@ -40,4 +48,5 @@ random.shuffle(configs)
 # run experiments
 print("Running experiments with different learning parameters")
 for config, shortened_config in configs:
-    run_experiment(config, group="set_parameters_as_constant", notes=shortened_config)
+    notes = shortened_config + (", "+additional_notes) if additional_notes is not None else ""
+    run_experiment(config, group=group, notes=notes)
