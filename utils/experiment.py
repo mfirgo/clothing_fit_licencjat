@@ -1,3 +1,4 @@
+from selectors import EpollSelector
 import wandb
 from utils.data_preparation import *
 from model.hierarchical_size_model_new import *
@@ -23,9 +24,9 @@ def default_config():
         "evaluation_iterations":[1,2,5,10,20,50,100]
         }
 
-def run_experiment(config=None, notes=None, project="clothing-fit", group=None, finish_if_converged=True):
+def run_experiment(config=None, notes=None, project="clothing-fit", group=None, finish_if_converged=True, tags=None):
     if config is None: config=default_config()
-    wandb.init(project=project, config=config, notes=notes, group=group)
+    run = wandb.init(project=project, config=config, notes=notes, group=group, tags=tags)
     if "data_info" not in wandb.config:
         data_info = {"train":{}, "test":{}}
         train = get_processed_renttherunway_data(data_info=data_info["train"])
@@ -36,13 +37,18 @@ def run_experiment(config=None, notes=None, project="clothing-fit", group=None, 
         train = get_data_from_config(data_info["train"])
         test = get_data_from_config(data_info["test"])
     model = HierarchicalSize(train, wandb.config.default_learning_rate, config=wandb.config)
+    run.tags = run.tags + model.tags
     wandb.config.update(model.get_model_config())
+    improving_target_prob, improving_accuracy, target_prob, accuracy = False, False, 0.03, 0.04
     for i in tqdm(range(wandb.config["max_iter"])):
         model.update()
         log_values = model.get_parameters_stats()
         if i in wandb.config["evaluation_iterations"]:
             results = model.predict(test)
             log_values.update(result_stats_size_model(results))
+            log_values.update(categorical_mean_prob_stats_size_model(results))
+            improving_target_prob = log_values["mean_target_probability"]>target_prob; improving_accuracy = log_values["accuracy"] > accuracy
+            target_prob, accuracy = log_values["mean_target_probability"], log_values["accuracy"]
         wandb.log(log_values, step=model.iterations)
         if finish_if_converged and model.all_converged():
             break
@@ -50,6 +56,9 @@ def run_experiment(config=None, notes=None, project="clothing-fit", group=None, 
         results = model.predict(test)
         log_values.update(result_stats_size_model(results))
         wandb.log(log_values, step=model.iterations)
+    run.tags = run.tags + ("model_"+("converged" if model.all_converged() else "not_converged"),)
+    run.tags = run.tags + ("accuracy_"+("improving" if improving_accuracy else "not_improving"),)
+    run.tags = run.tags + ("target_prob_"+("improving" if improving_target_prob else "not_improving"),)
     wandb.finish()
     
 
