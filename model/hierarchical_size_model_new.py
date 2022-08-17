@@ -101,7 +101,7 @@ class HierarchicalSize:
         self.default_learning_rate = default_learning_rate
         self.update_order = ["sigma_c", "mu_c", "mu_a", "eta_r"]
         self.KEPT, self.BIG, self.SMALL = FIT_LABEL, LARGE_LABEL, SMALL_LABEL
-        self.tags = ("mu_0_per_customer",) # model tags touple
+        self.tags = ("mu_0_per_customer","sigma_0_per_customer") # model tags touple
         self.history = []
         self.iterations = 0 
         self._create_parameters()
@@ -152,7 +152,7 @@ class HierarchicalSize:
     def _init_constants(self):
         self.Nc.value = self.train.groupby("user_id")["user_id"].count()#.values
         self.mu_0.value = self.train.groupby("user_id")["size"].mean().sort_index().values
-        self.sigma_0.value = self.train["size"].std()
+        self.sigma_0.value = self.train.groupby("user_id")["size"].std().sort_index().values*0.9 + 0.1*self.train["size"].std()
         self.sigma_0_inverse_square.value = 1/(self.sigma_0.value**2)
         self.eta_kept.value = 0
         self.alpha_sigma_c.value = (self.Nc.value/ 2 ) + 1
