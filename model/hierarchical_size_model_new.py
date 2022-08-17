@@ -95,7 +95,7 @@ class Parameter:
             self.value = new_value*self.learning_rate + self.value*(1-self.learning_rate) 
     
 class HierarchicalSize:
-    def __init__(self, train_data, default_learning_rate=1, max_user_id=None, max_item_id=None, model_name = 'h_size_with_update_order', config=None):
+    def __init__(self, train_data, default_learning_rate=1, max_user_id=None, max_item_id=None, model_name = 'h_size_mu_0_per_customer', config=None):
         self.creation_date = current_timestamp()
         self.model_name = model_name + "_" +self.creation_date+"/"+model_name
         self.default_learning_rate = default_learning_rate
@@ -151,7 +151,7 @@ class HierarchicalSize:
 
     def _init_constants(self):
         self.Nc.value = self.train.groupby("user_id")["user_id"].count()#.values
-        self.mu_0.value = self.train["size"].mean()
+        self.mu_0.value = self.train.groupby("user_id")["size"].mean().sort_index().values
         self.sigma_0.value = self.train["size"].std()
         self.sigma_0_inverse_square.value = 1/(self.sigma_0.value**2)
         self.eta_kept.value = 0
