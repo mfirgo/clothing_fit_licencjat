@@ -101,7 +101,7 @@ class HierarchicalSize:
         self.default_learning_rate = default_learning_rate
         self.update_order = ["sigma_c", "mu_c", "mu_a", "eta_r"]
         self.KEPT, self.BIG, self.SMALL = FIT_LABEL, LARGE_LABEL, SMALL_LABEL
-        self.tags = () # model tags touple
+        self.tags = ("mu_0_per_customer",) # model tags touple
         self.history = []
         self.iterations = 0 
         self._create_parameters()
