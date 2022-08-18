@@ -89,6 +89,21 @@ def split_renttherunway_data(test_size=0.1, random_state=DEFAULT_RANDOM_STATE):
     train.to_csv(get_renttherunway_dataset_filepath("train", test_size, random_state), index=False)
     test.to_csv(get_renttherunway_dataset_filepath("test", test_size, random_state), index=False)
 
+def fix_train_test_split(train, test, column):
+    isin_mask = test[column].isin(train[column])
+    add_to_train = test[~isin_mask]
+    train = train.append(add_to_train)
+    test = test.drop(test[~isin_mask].index)
+    return train, test
+
+def stratified_split_renttherunway_data(test_size=0.1, random_state=2022):
+    df = get_processed_renttherunway_data()
+    train, test = train_test_split(df, test_size=test_size, random_state=random_state)
+    train, test = fix_train_test_split(train, test, "user_id")
+    train, test = fix_train_test_split(train, test, "item_id")
+    train.to_csv(get_renttherunway_dataset_filepath("train-stratified", test_size, random_state), index=False)
+    test.to_csv(get_renttherunway_dataset_filepath("test-stratified", test_size, random_state), index=False)
+
 def get_test_runttherunway_data(test_size=0.1, random_state=DEFAULT_RANDOM_STATE, data_info=None):
     datapath = get_renttherunway_dataset_filepath("test", test_size, random_state)
     if not exists(datapath):
@@ -140,7 +155,7 @@ def get_data_from_config(config):
     datapath = config["datapath"]
     if not exists(datapath):
         raise ValueError(f"File {datapath} does not exist")
-    return pd.read_json(datapath, lines=True)
+    return pd.read_csv(datapath)
 
 KEPT_STRING = 'fit'
 FIT_STRING = KEPT_STRING
