@@ -89,6 +89,35 @@ def split_renttherunway_data(test_size=0.1, random_state=DEFAULT_RANDOM_STATE):
     train.to_csv(get_renttherunway_dataset_filepath("train", test_size, random_state), index=False)
     test.to_csv(get_renttherunway_dataset_filepath("test", test_size, random_state), index=False)
 
+def split_data(dataset="renttherunway", test_size=0.1, random_state=DEFAULT_RANDOM_STATE):
+    df = get_data_from_config({"dataset":dataset, "dataset_type":"full"})
+    train, test = train_test_split(df, test_size=test_size, random_state=random_state)
+    train.to_csv(get_datapath_from_config({"dataset_type":"train","dataset":dataset, "test_size":test_size, "random_state":random_state}), index=False)
+    test.to_csv(get_datapath_from_config({"dataset_type":"test","dataset":dataset, "test_size":test_size, "random_state":random_state}), index=False)
+
+def fix_train_test_split(train, test, column):
+    isin_mask = test[column].isin(train[column])
+    add_to_train = test[~isin_mask]
+    train = train.append(add_to_train)
+    test = test.drop(test[~isin_mask].index)
+    return train, test
+
+def stratified_split_renttherunway_data(test_size=0.1, random_state=DEFAULT_RANDOM_STATE):
+    df = get_processed_renttherunway_data()
+    train, test = train_test_split(df, test_size=test_size, random_state=random_state)
+    train, test = fix_train_test_split(train, test, "user_id")
+    train, test = fix_train_test_split(train, test, "item_id")
+    train.to_csv(get_renttherunway_dataset_filepath("train-stratified", test_size, random_state), index=False)
+    test.to_csv(get_renttherunway_dataset_filepath("test-stratified", test_size, random_state), index=False)
+
+def stratified_split_data(dataset="renttherunway", test_size=0.1, random_state=DEFAULT_RANDOM_STATE):
+    df = get_data_from_config({"dataset":dataset, "dataset_type":"full"})
+    train, test = train_test_split(df, test_size=test_size, random_state=random_state)
+    train, test = fix_train_test_split(train, test, "user_id")
+    train, test = fix_train_test_split(train, test, "item_id")
+    train.to_csv(get_datapath_from_config({"dataset_type":"train-stratified","dataset":dataset, "test_size":test_size, "random_state":random_state}), index=False)
+    test.to_csv(get_datapath_from_config({"dataset_type":"test-stratified","dataset":dataset, "test_size":test_size, "random_state":random_state}), index=False)
+
 def get_test_runttherunway_data(test_size=0.1, random_state=DEFAULT_RANDOM_STATE, data_info=None):
     datapath = get_renttherunway_dataset_filepath("test", test_size, random_state)
     if not exists(datapath):
@@ -127,6 +156,22 @@ def get_datapath_from_config(config):
     dataset = config["dataset"] if "dataset" in config else "renttherunway"
     return get_renttherunway_dataset_filepath(dataset_type, test_size, random_state, dataset)
 
+def fill_config_with_default(config):
+    config["dataset"] = config["dataset"] if "dataset" in config else "renttherunway"
+    config["dataset_type"] = config["dataset_type"] if "dataset_type" in config else "full"
+    if config["dataset_type"] != "full":
+        config["test_size"] = config["test_size"] if "test_size" in config else 0.1
+        config["random_state"] = config["random_state"] if "random_state" in config else DEFAULT_RANDOM_STATE
+
+def create_data_from_config(config):
+    fill_config_with_default(config)
+    if config["dataset_type"] in ["train", "test"]:
+        split_data(config["dataset"], config["test_size"], config["random_state"])
+    elif config["dataset_type"] in ["train-stratified", "test-stratified"]:
+        stratified_split_data(config["dataset"], config["test_size"], config["random_state"])
+    else:
+        raise ValueError(f"This function does not support creating dataset_type {config['dataset_type']}")
+
 def get_data_from_config(config):
     if "datapath" in config:
         datapath = config["datapath"]
@@ -139,8 +184,9 @@ def get_data_from_config(config):
         config["datapath"] = get_datapath_from_config(config)
     datapath = config["datapath"]
     if not exists(datapath):
-        raise ValueError(f"File {datapath} does not exist")
-    return pd.read_json(datapath, lines=True)
+        create_data_from_config(config)
+        #raise ValueError(f"File {datapath} does not exist")
+    return pd.read_csv(datapath)
 
 KEPT_STRING = 'fit'
 FIT_STRING = KEPT_STRING
