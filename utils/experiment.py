@@ -21,12 +21,20 @@ def default_config():
     return{
         "default_learning_rate":1,
         "max_iter":100,
-        "evaluation_iterations":[1,2,5,10,20,50,100]
+        "evaluation_iterations":[1,2,5,10,20,50,100],
+        "data_info":{
+            "train":{
+                "dataset_type":"train-stratified"
+                },
+            "test":{
+                "dataset_type":"test-stratified"
+                }
+            }
         }
 
-def run_experiment(config=None, notes=None, project="clothing-fit", group=None, finish_if_converged=True, tags=None):
+def run_experiment(config=None, notes=None, project="clothing-fit", group=None, finish_if_converged=True, tags=None, entity=None):
     if config is None: config=default_config()
-    run = wandb.init(project=project, config=config, notes=notes, group=group, tags=tags)
+    run = wandb.init(project=project, config=config, notes=notes, group=group, tags=tags, entity=entity)
     if "data_info" not in wandb.config:
         data_info = {"train":{}, "test":{}}
         train = get_processed_renttherunway_data(data_info=data_info["train"])

@@ -51,7 +51,7 @@ class Parameter:
     def initialize(self, init_config):
         if init_config=="default" or init_config=="custom_value":
             pass
-        if isinstance(init_config, dict):
+        elif isinstance(init_config, dict):
             init_type = init_config["type"]
             if init_type == "noise":
                 init_config["previous_init"]=self.init
@@ -72,9 +72,9 @@ class Parameter:
                 init_config["scale"] = scale
                 self.value = np.random.normal(loc, scale, self.value.shape if isinstance(self.value, (np.ndarray, pd.Series)) else None)
             else:
-                raise ValueError("unknown init type {init_type}")
+                raise ValueError(f"unknown init type {init_type}")
         else:
-            raise ValueError("unknown init config {init_config}")
+            raise ValueError(f"unknown init config {init_config}")
         self.init = init_config
     
     def change_config(self, config):
@@ -84,8 +84,9 @@ class Parameter:
         if f"{self.name}_learning_rate" in config:
             self.learning_rate = config[f"{self.name}_learning_rate"]
         if f"{self.name}_value" in config:
-            self.value = config[f"{self.name}_value"]
-            self.init = "custom_value"
+            if isinstance(config[f"{self.name}_value"],(int, float, np.ndarray, pd.Series)):
+                self.value = config[f"{self.name}_value"]
+                self.init = "custom_value"
         if f"{self.name}_init" in config:
             self.initialize(config[f"{self.name}_init"])
 
