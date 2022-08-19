@@ -55,6 +55,7 @@ def get_runs_configs(runs):
     for run in runs:
         run_configs.append(run.config.copy())
         run_configs[-1].update({"parent_run":run.name})
+    return run_configs
 
 def filter_runs_by_summary(runs, field, value, over=True):
     filtered_runs = []
@@ -75,6 +76,13 @@ def filter_runs_by_tags(runs, tag, no_tag=False):
         return no_tag_runs
     else:
         return tag_runs
+
+def filter_runs_by_data_config(runs, field, value, part="train"):
+    filtered_runs = []
+    for run in runs:
+        if run.config["data_info"][part][field] == value:
+            filtered_runs.append(run)
+    return filtered_runs
 
 def filter_runs_by_group(runs, groups, included=False):
     included_runs = []
