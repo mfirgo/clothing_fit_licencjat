@@ -1,5 +1,6 @@
 import wandb
 import pandas as pd
+import json
 
 ############
 # Get runs #
@@ -100,17 +101,17 @@ def filter_runs_by_group(runs, groups, included=False):
 #################
 # Modify config #
 #################
-def delete_parameter_variables(config, suffixes=("_value", "_init")):
+def delete_parameter_variables(config, suffixes=("_value", "_init"), debug=True):
     to_delete = []
     for key, value in config.items():
         if key.endswith(suffixes): to_delete.append(key)
-    print("following keys will be deleted:", to_delete)
+    if debug: print("following keys will be deleted:", to_delete)
     for key in to_delete:
         del config[key]
 
-def update_learning_rate(config, learning_rate, all_variables=True):
+def update_learning_rate(config, learning_rate, all_variables=True, debug=False):
     if all_variables:
-        delete_parameter_variables(config, ("_learning_rate",))
+        delete_parameter_variables(config, ("_learning_rate",), debug=debug)
         config["default_learning_rate"]=learning_rate
     else:
         previous_default = config["default_learning_rate"]
@@ -118,8 +119,8 @@ def update_learning_rate(config, learning_rate, all_variables=True):
             if key.endswith("_learning_rate") and config[key]==previous_default:
                 config[key] = learning_rate
 
-def clean_config(config, default_learning_rate=1, new_data_info=None):
-    delete_parameter_variables(config)
+def clean_config(config, default_learning_rate=1, new_data_info=None, debug=True):
+    delete_parameter_variables(config, debug=debug)
     update_learning_rate(config, learning_rate=default_learning_rate, all_variables=True)
     if "model_name" in config: del config["model_name"]
     if new_data_info is not None:
@@ -143,3 +144,15 @@ def stratified_data_info(dataset=None, random_state=None, test_size=None):
     if random_state is not None : train_info["random_state"], test_info["random_state"] = random_state, random_state
     if test_size is not None :train_info["test_size"], test_info["test_size"] = test_size, test_size
     return {"train": train_info, "test": test_info}
+
+##############################
+# Saving and reading configs #
+##############################
+def safe_configs_to_file(configs, filename):
+    with open(f"./experiments/tests/configs/{filename}.json", "w") as outfile:
+        json.dump(configs, outfile)
+
+def read_configs_from_file(filename):
+    with open(f"./experiments/tests/configs/{filename}.json", "r") as infile:
+        configs = json.load(infile)
+    return configs
