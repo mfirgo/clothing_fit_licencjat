@@ -28,5 +28,4 @@ for config in configs:
         modified_config = config.copy()
         update_learning_rate(modified_config, lr)
         notes = f"lr={lr}" + (f", {additional_notes}" if additional_notes is not None else "")
-        print(notes)
-        #run_experiment(modified_config, group=group, notes=notes)
+        run_experiment(modified_config, group=group, notes=notes)
