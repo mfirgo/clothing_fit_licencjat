@@ -49,6 +49,7 @@ def get_runs_df(runs, summary_fields=["accuracy", "mean_target_probability","RMS
     runs_stats = []
     for run in runs:
         runs_stats.append(get_run_stats(run, summary_fields, config_fields))
+        runs_stats[-1]["notes"] = run.notes
     return pd.DataFrame(runs_stats)
 
 def get_runs_configs(runs):

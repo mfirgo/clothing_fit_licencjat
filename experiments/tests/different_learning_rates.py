@@ -11,7 +11,7 @@ from utils.runs_and_configs import read_configs_from_file, update_learning_rate
 import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument("config_file", type=str, )
-parser.add_argument('--group', type=str, default="set_parameters_as_constants")
+parser.add_argument('--group', type=str, default="different_learning_rates")
 parser.add_argument('--notes', type=str, default=None)
 parser.add_argument('--learning_rates', type=float, nargs="+", default=[1.0, 0.5, 0.25, 0.2, 0.1])
 args = parser.parse_args()
