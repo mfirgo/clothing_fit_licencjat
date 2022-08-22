@@ -392,3 +392,8 @@ class HierarchicalSize:
         results["all_sizes_results"] = results.apply(lambda row: self.multi_pdfs(*row[["item_id", "user_id", "result"]]), axis=1)
         results["predicted_prob"], results["predicted_size"] = zip(*results["all_sizes_results"].apply(lambda x: (np.max(x), np.argmax(x))))
         return results
+
+    def size_prob(self, test_df):
+        results = test_df.copy()
+        results["size_prob"] = results.apply(lambda row: self.pdf(*row[["item_id", "user_id", "result", "size"]]), axis=1)
+        return results

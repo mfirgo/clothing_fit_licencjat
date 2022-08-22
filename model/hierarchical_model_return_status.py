@@ -3,7 +3,7 @@ import pandas as pd
 
 
 class HierarchicalStatus:
-    def __init__(self, category_treshold=100, alpha=0.1, beta=1, OTHER_CAT="other", init_w="random"):
+    def __init__(self, category_treshold=100, alpha=0.1, beta=1, OTHER_CAT="other", init_w="random", df=None, return_status_column = "result"):
         self.OTHER_CAT = OTHER_CAT
         self.beta = beta
         self.alpha = alpha
@@ -15,6 +15,12 @@ class HierarchicalStatus:
         self.train = None
         self.iterations = 0
         self.history = []
+        if df is not None:
+            print("Initializing model...", end=" ")
+            self.initialize_model(df, return_status_column)
+            print("Model initiated")
+            self.prepare_trainset(df, return_status_column) 
+            print("Trainset prepared")
 
     def _init_w(self, init_w):
         if init_w == "random":
@@ -112,4 +118,6 @@ class HierarchicalStatus:
             prediction[status] = ((prediction[str(status)+"_by_article"] + self.w *prediction[str(status)+'_by_category'])
                                 / (prediction["all_by_article"] + self.w * prediction["all_by_category"]))
         prediction['predicted_return_status'] = prediction[self.labels].idxmax(axis=1)
+        prediction['return_status_prob'] = prediction.apply(lambda row: row[row['result']], axis=1)
+        prediction['predicted_return_status_prob'] = prediction.apply(lambda row: row[row['predicted_return_status']], axis=1)
         return prediction
