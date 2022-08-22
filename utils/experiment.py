@@ -32,7 +32,7 @@ def default_config():
             }
         }
 
-def run_experiment(config=None, notes=None, project="clothing-fit", group=None, finish_if_converged=True, tags=None, entity=None, log_target_prob_every=None):
+def run_experiment(config=None, notes=None, project="clothing-fit", group=None, finish_if_converged=True, tags=None, entity=None, log_target_prob_every=None, return_run_and_model=False):
     if config is None: config=default_config()
     run = wandb.init(project=project, config=config, notes=notes, group=group, tags=tags, entity=entity)
     if "data_info" not in wandb.config:
@@ -72,6 +72,8 @@ def run_experiment(config=None, notes=None, project="clothing-fit", group=None, 
     run.tags = run.tags + ("accuracy_"+("improving" if improving_accuracy else "not_improving"),)
     run.tags = run.tags + ("target_prob_"+("improving" if improving_target_prob else "not_improving"),)
     wandb.finish()
+    if return_run_and_model:
+        return run, model
     
 
     
