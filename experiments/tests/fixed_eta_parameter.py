@@ -21,7 +21,7 @@ parser.add_argument('--var_small', type=float, default=0.0001)
 parser.add_argument('--var_big', type=float, default=0.0001)
 parser.add_argument('--eta_lr', type=float, default=None)
 args = parser.parse_args()
-additional_notes = args.notes 
+additional_notes = args.notes
 group = args.group
 
 print(args.mean_small)
@@ -60,17 +60,20 @@ for element in itertools.product(*[[True, False] for _ in range(3)]):
     config, shortened_config = create_config(*element)
     update_config_with_eta(config)
     configs.append((config, shortened_config))
-random.shuffle(configs)
+#random.shuffle(configs)
 
 # run experiments
 print("Running experiments with different learning parameters and fixed eta")
 for config, shortened_config in configs:
     notes = shortened_config + ((", "+additional_notes) if additional_notes is not None else "") + ("" if args.eta_lr is None else f", eta_lr={args.eta_lr}")
     print(notes)
-    run, model = run_experiment(config, group=group, notes=notes, return_run_and_model=True)
-    if run.summary["accuracy"]>0.1 or run.summary["mean_target_probability"]>0.05:
-        os.makedirs(get_run_directory(run.name))
-        safe_run_config_to_file(run)
-        safe_run_parameters(run.name, model)
+    run, model, acc, target_prob = run_experiment(config, group=group, notes=notes, return_run_and_model=True, entity="mfirgo", project="test-project", wandb_finish=False)
+    run_name = run.name
+    if acc>0.1 or target_prob>0.05:
+        os.makedirs(get_run_directory(run_name))
+        #safe_run_config_to_file(run)
+        safe_run_parameters(run_name, model)
         safe_run_id_to_file(run)
+    wandb.finish()
+    break
 

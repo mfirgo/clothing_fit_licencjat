@@ -32,7 +32,7 @@ def default_config():
             }
         }
 
-def run_experiment(config=None, notes=None, project="clothing-fit", group=None, finish_if_converged=True, tags=None, entity=None, log_target_prob_every=None, return_run_and_model=False):
+def run_experiment(config=None, notes=None, project="clothing-fit", group=None, finish_if_converged=True, tags=None, entity=None, log_target_prob_every=None, return_run_and_model=False, wandb_finish=True):
     if config is None: config=default_config()
     run = wandb.init(project=project, config=config, notes=notes, group=group, tags=tags, entity=entity)
     if "data_info" not in wandb.config:
@@ -64,16 +64,16 @@ def run_experiment(config=None, notes=None, project="clothing-fit", group=None, 
         wandb.log(log_values, step=model.iterations)
         if finish_if_converged and model.all_converged():
             break
-    if "mean_target_probability" not in log_values:
+    if "accuracy" not in log_values:
         results = model.predict(test)
         log_values.update(result_stats_size_model(results))
         wandb.log(log_values, step=model.iterations)
     run.tags = run.tags + ("model_"+("converged" if model.all_converged() else "not_converged"),)
     run.tags = run.tags + ("accuracy_"+("improving" if improving_accuracy else "not_improving"),)
     run.tags = run.tags + ("target_prob_"+("improving" if improving_target_prob else "not_improving"),)
-    wandb.finish()
+    if wandb_finish: wandb.finish()
     if return_run_and_model:
-        return run, model
+        return run, model, log_values["accuracy"], log_values["mean_target_probability"]
     
 
     
