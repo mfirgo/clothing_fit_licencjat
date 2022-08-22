@@ -75,5 +75,3 @@ for config, shortened_config in configs:
         safe_run_parameters(run_name, model)
         safe_run_id_to_file(run)
     wandb.finish()
-    break
-
