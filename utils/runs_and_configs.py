@@ -19,6 +19,16 @@ def get_runs_by_id(run_ids, entity=WANDB_ENTITY, project=WANDB_PROJECT):
         runs.append(api.run(entity+"/"+project+"/"+id))
     return runs
 
+def get_run_by_id(run_id, entity=WANDB_ENTITY, project=WANDB_PROJECT):
+    api = wandb.Api()
+    return api.run(entity+"/"+project+"/"+id)
+
+def get_run_by_name(run_name, entity=WANDB_ENTITY, project=WANDB_PROJECT):
+    api = wandb.Api()
+    for run in get_runs(entity, project):
+        if run.name == run_name:
+            return run
+
 def filter_runs_by_name(runs, run_names):
     result =[]
     for run in runs:
@@ -65,6 +75,14 @@ def filter_runs_by_summary(runs, field, value, over=True):
         if field in run.summary and (run.summary[field] >= value if over else run.summary[field] <= value):
             filtered_runs.append(run)
     return filtered_runs
+
+def filter_runs_by_config(runs, field, value):
+    filtered_runs = []
+    for run in runs:
+        if field in run.config and (run.config[field] == value):
+            filtered_runs.append(run)
+    return filtered_runs
+
 
 def filter_runs_by_tags(runs, tag, no_tag=False):
     tag_runs = []
