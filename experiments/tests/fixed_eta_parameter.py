@@ -67,7 +67,7 @@ print("Running experiments with different learning parameters and fixed eta")
 for config, shortened_config in configs:
     notes = shortened_config + ((", "+additional_notes) if additional_notes is not None else "") + ("" if args.eta_lr is None else f", eta_lr={args.eta_lr}")
     print(notes)
-    run, model, acc, target_prob = run_experiment(config, group=group, notes=notes, return_run_and_model=True, entity="mfirgo", project="test-project", wandb_finish=False)
+    run, model, acc, target_prob = run_experiment(config, group=group, notes=notes, return_run_and_model=True, wandb_finish=False)
     run_name = run.name
     if acc>0.1 or target_prob>0.05:
         os.makedirs(get_run_directory(run_name))
