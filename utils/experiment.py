@@ -32,7 +32,7 @@ def default_config():
             }
         }
 
-def run_experiment(config=None, notes=None, project="clothing-fit", group=None, finish_if_converged=True, tags=None, entity=None):
+def run_experiment(config=None, notes=None, project="clothing-fit", group=None, finish_if_converged=True, tags=None, entity=None, log_target_prob_every=None):
     if config is None: config=default_config()
     run = wandb.init(project=project, config=config, notes=notes, group=group, tags=tags, entity=entity)
     if "data_info" not in wandb.config:
@@ -51,12 +51,16 @@ def run_experiment(config=None, notes=None, project="clothing-fit", group=None, 
     for i in tqdm(range(wandb.config["max_iter"])):
         model.update()
         log_values = model.get_parameters_stats()
-        if i in wandb.config["evaluation_iterations"]:
+        if model.iterations in wandb.config["evaluation_iterations"]:
             results = model.predict(test)
             log_values.update(result_stats_size_model(results))
             log_values.update(categorical_mean_prob_stats_size_model(results))
             improving_target_prob = log_values["mean_target_probability"]>target_prob; improving_accuracy = log_values["accuracy"] > accuracy
             target_prob, accuracy = log_values["mean_target_probability"], log_values["accuracy"]
+        elif log_target_prob_every is not None and model.iterations%log_target_prob_every==0:
+            results = model.size_prob(test)
+            log_values.update({"mean_target_probability": results["size_prob"].mean(),
+                                "mean_log_target_probability":np.log(results["size_prob"]).mean()})
         wandb.log(log_values, step=model.iterations)
         if finish_if_converged and model.all_converged():
             break
