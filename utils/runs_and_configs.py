@@ -21,7 +21,7 @@ def get_runs_by_id(run_ids, entity=WANDB_ENTITY, project=WANDB_PROJECT):
 
 def get_run_by_id(run_id, entity=WANDB_ENTITY, project=WANDB_PROJECT):
     api = wandb.Api()
-    return api.run(entity+"/"+project+"/"+id)
+    return api.run(entity+"/"+project+"/"+run_id)
 
 def get_run_by_name(run_name, entity=WANDB_ENTITY, project=WANDB_PROJECT):
     api = wandb.Api()
@@ -100,7 +100,7 @@ def filter_runs_by_tags(runs, tag, no_tag=False):
 def filter_runs_by_data_config(runs, field, value, part="train"):
     filtered_runs = []
     for run in runs:
-        if run.config["data_info"][part][field] == value:
+        if "data_info" in run.config and run.config["data_info"][part][field] == value:
             filtered_runs.append(run)
     return filtered_runs
 
