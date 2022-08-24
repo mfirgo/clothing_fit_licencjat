@@ -3,8 +3,9 @@ import pandas as pd
 
 
 class HierarchicalStatus:
-    def __init__(self, category_treshold=100, alpha=0.1, beta=1, OTHER_CAT="other", init_w="random", df=None, return_status_column = "result"):
+    def __init__(self, category_treshold=100, alpha=0.1, beta=1, OTHER_CAT="other", init_w="random", df=None, return_status_column = "result", add_dummy_sales=0):
         self.OTHER_CAT = OTHER_CAT
+        self.add_dummy_sales = add_dummy_sales
         self.beta = beta
         self.alpha = alpha
         self.treshold = category_treshold
@@ -54,9 +55,9 @@ class HierarchicalStatus:
         self.default['predicted_return_status'] = self.default[labels].idxmax()
 
         df_encoded = pd.concat([df, dummies], axis=1)
-        self.sales_at_article_level  = df_encoded[["item_id"]+list(labels)].groupby(["item_id"]).sum().rename(columns={l: str(l)+"_by_article" for l in labels}) #+ 1
+        self.sales_at_article_level  = df_encoded[["item_id"]+list(labels)].groupby(["item_id"]).sum().rename(columns={l: str(l)+"_by_article" for l in labels}) + self.add_dummy_sales
         self.sales_at_article_level["all_by_article"] = self.sales_at_article_level.sum(axis=1)
-        self.sales_at_category_level  = df_encoded[["category"]+list(labels)].groupby(["category"]).sum().rename(columns={l:str(l)+'_by_category' for l in labels}) #+ 1
+        self.sales_at_category_level  = df_encoded[["category"]+list(labels)].groupby(["category"]).sum().rename(columns={l:str(l)+'_by_category' for l in labels}) + self.add_dummy_sales
         self.sales_at_category_level["all_by_category"] = self.sales_at_category_level.sum(axis=1)
         self.sales_at_category_level.loc[self.OTHER_CAT] = self.sales_at_category_level.sum()
 
