@@ -63,6 +63,9 @@ def get_model(run_name):
         os.makedirs(get_run_directory(run_name))
         run = get_run(run_name)
         safe_run_config_to_file(run)
+    if not exists(get_run_directory(run_name)+"/config.json"):
+        run = get_run(run_name)
+        safe_run_config_to_file(run)
     if not exists(get_run_directory(run_name)+"/parameters"):
         model = rerun_run(run_name)
     else:
@@ -70,5 +73,5 @@ def get_model(run_name):
         parameters = get_run_parameters(run_name)
         train = get_data_from_config(config["data_info"]["train"])
         model = HierarchicalSize(train, config["default_learning_rate"], config=config)
-        model.load_parameters(parameters)
+        model.load_parameters(parameters.items())
     return model
