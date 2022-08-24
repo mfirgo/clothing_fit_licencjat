@@ -20,6 +20,8 @@ parser.add_argument('--mean_big', type=float, default=0.54)
 parser.add_argument('--var_small', type=float, default=0.0001)
 parser.add_argument('--var_big', type=float, default=0.0001)
 parser.add_argument('--eta_lr', type=float, default=None)
+parser.add_argument('--max_iter', type=int, default=100)
+parser.add_argument('--evaluation_iterations', type=int, nargs="+", default=[1,2,5,10,20,50,100])
 args = parser.parse_args()
 additional_notes = args.notes
 group = args.group
@@ -59,6 +61,8 @@ configs = []
 for element in itertools.product(*[[True, False] for _ in range(3)]):
     config, shortened_config = create_config(*element)
     update_config_with_eta(config)
+    config["max_iter"]=args.max_iter
+    config["evaluation_iterations"]=args.evaluation_iterations
     configs.append((config, shortened_config))
 #random.shuffle(configs)
 
