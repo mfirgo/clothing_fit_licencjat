@@ -3,11 +3,19 @@ import pandas as pd
 from utils.data_preparation import FIT_LABEL, LARGE_LABEL, SMALL_LABEL
 from tqdm import tqdm
 from utils.model_loading import *
+import scipy.stats
 
 def normal_pdf(mu = 0, sigma = 1, x = 0):
     return (np.exp(-0.5*
                    ((x-mu)/sigma)**2) /
             (sigma* np.sqrt(2*np.pi)))
+
+def normal_integral(x_from, x_to, mu=0, sigma=1, sigma_sq=None):
+    if sigma_sq is not None:
+        sigma = np.sqrt(sigma_sq)
+    lower = scipy.stats.norm.cdf(x_from, loc=mu, scale=sigma)
+    higher = scipy.stats.norm.cdf(x_to, loc=mu, scale=sigma)
+    return higher-lower
 
 class Parameter:
     def __init__(self, name, value, learning_rate, isconstant):
@@ -352,7 +360,33 @@ class HierarchicalSize:
     ###  Prediction  ###
     ####################
 
-    def pdf(self, article, customer, return_status, customer_size, n_samples=1000):
+    def pdf_from_expected(self, article, customer, return_status, customer_size):
+        mu_a = self.mean_mu_a.value[article]
+        mu_c = self.mean_mu_c.value[customer]
+        if return_status == FIT_LABEL: eta_r = self.mean_eta_kept.value
+        elif return_status == LARGE_LABEL: eta_r = self.mean_eta_big.value
+        elif return_status == SMALL_LABEL: eta_r = self.mean_eta_small.value
+        else: raise ValueError("Unknown return status", return_status)
+        mu = mu_a+mu_c+eta_r
+        sigma_squared = self.beta_sigma_c.value[customer]/(self.alpha_sigma_c.value[customer]-1)
+        full_integral = normal_integral(-0.5, 59.5, mu, sigma_sq=sigma_squared)
+        size_integral = normal_integral(customer_size-0.5, customer_size+0.5, mu, sigma_sq=sigma_squared)
+        return size_integral/full_integral
+
+    def multi_pdfs_from_expected(self, article, customer, return_status, customer_sizes=np.arange(0,59)):
+        mu_a = self.mean_mu_a.value[article]
+        mu_c = self.mean_mu_c.value[customer]
+        if return_status == FIT_LABEL: eta_r = self.mean_eta_kept.value
+        elif return_status == LARGE_LABEL: eta_r = self.mean_eta_big.value
+        elif return_status == SMALL_LABEL: eta_r = self.mean_eta_small.value
+        else: raise ValueError("Unknown return status", return_status)
+        mu = mu_a+mu_c+eta_r
+        sigma_squared = self.beta_sigma_c.value[customer]/(self.alpha_sigma_c.value[customer]-1)
+        full_integral = normal_integral(-0.5, 59.5, mu, sigma_sq=sigma_squared)
+        pdfs = [normal_integral(customer_size-0.5, customer_size+0.5, mu, sigma_sq=sigma_squared)/full_integral for customer_size in customer_sizes]
+        return pdfs
+
+    def pdf_sampled(self, article, customer, return_status, customer_size, n_samples=1000):
         mu_a_samples = np.random.normal(self.mean_mu_a.value[article], self.variance_mu_a.value[article], size=n_samples)
         mu_c_samples = np.random.normal(self.mean_mu_c.value[customer], self.variance_mu_c.value[customer], size=n_samples)
         if return_status==FIT_LABEL:
@@ -369,7 +403,7 @@ class HierarchicalSize:
         pdf_values = normal_pdf(mu_samples, sigma_c_samples, customer_size)
         return pdf_values.mean()
 
-    def multi_pdfs(self, article, customer, return_status, customer_sizes=np.arange(0,59), n_samples=1000):
+    def multi_pdfs_sampled(self, article, customer, return_status, customer_sizes=np.arange(0,59), n_samples=1000):
         mu_a_samples = np.random.normal(self.mean_mu_a.value[article], self.variance_mu_a.value[article], size=n_samples)
         mu_c_samples = np.random.normal(self.mean_mu_c.value[customer], self.variance_mu_c.value[customer], size=n_samples)
         if return_status==self.KEPT:
@@ -385,6 +419,12 @@ class HierarchicalSize:
         mu_samples = mu_a_samples+mu_c_samples+eta_r_samples
         pdf_values = [normal_pdf(mu_samples, sigma_c_samples, customer_size).mean() for customer_size in customer_sizes]
         return pdf_values
+    
+    def pdf(self, article, customer, return_status, customer_size):
+        return self.pdf_from_expected(article, customer, return_status, customer_size)
+    
+    def multi_pdfs(self, article, customer, return_status):
+        return self.multi_pdfs_from_expected(article, customer, return_status)
         
     def predict(self, test_df):
         results = test_df.copy()
