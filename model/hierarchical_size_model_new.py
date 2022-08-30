@@ -383,7 +383,10 @@ class HierarchicalSize:
         mu = mu_a+mu_c+eta_r
         sigma_squared = self.beta_sigma_c.value[customer]/(self.alpha_sigma_c.value[customer]-1)
         full_integral = normal_integral(-0.5, 59.5, mu, sigma_sq=sigma_squared)
-        pdfs = [normal_integral(customer_size-0.5, customer_size+0.5, mu, sigma_sq=sigma_squared)/full_integral for customer_size in customer_sizes]
+        cdfs = scipy.stats.norm.cdf([i-0.5 for i in range(61)], loc=mu, scale=np.sqrt(sigma_squared))
+        pdfs=[]
+        for i in range(60):
+            pdfs.append((cdfs[i+1]-cdfs[i])/full_integral)
         return pdfs
 
     def pdf_sampled(self, article, customer, return_status, customer_size, n_samples=1000):
@@ -420,20 +423,24 @@ class HierarchicalSize:
         pdf_values = [normal_pdf(mu_samples, sigma_c_samples, customer_size).mean() for customer_size in customer_sizes]
         return pdf_values
     
-    def pdf(self, article, customer, return_status, customer_size):
-        return self.pdf_from_expected(article, customer, return_status, customer_size)
-    
-    def multi_pdfs(self, article, customer, return_status):
-        return self.multi_pdfs_from_expected(article, customer, return_status)
+    def pdf(self, article, customer, return_status, customer_size, predict_type="expected"):
+        if predict_type=="expected": return self.pdf_from_expected(article, customer, return_status, customer_size)
+        elif predict_type=="sampled": return self.pdf_sampled(article, customer, return_status, customer_size)
+        else: raise ValueError(f"Predict type {predict_type} not recoginzed")
+            
+    def multi_pdfs(self, article, customer, return_status, predict_type="expected"):
+        if predict_type=="expected": return self.multi_pdfs_from_expected(article, customer, return_status)
+        elif predict_type=="sampled": return self.multi_pdfs_sampled(article, customer, return_status)
+        else: raise ValueError(f"Predict type {predict_type} not recoginzed")
         
-    def predict(self, test_df):
+    def predict(self, test_df, predict_type="expected"):
         results = test_df.copy()
-        results["size_prob"] = results.apply(lambda row: self.pdf(*row[["item_id", "user_id", "result", "size"]]), axis=1)
-        results["all_sizes_results"] = results.apply(lambda row: self.multi_pdfs(*row[["item_id", "user_id", "result"]]), axis=1)
+        results["size_prob"] = results.apply(lambda row: self.pdf(*row[["item_id", "user_id", "result", "size"]], predict_type=predict_type), axis=1)
+        results["all_sizes_results"] = results.apply(lambda row: self.multi_pdfs(*row[["item_id", "user_id", "result"]], predict_type=predict_type), axis=1)
         results["predicted_prob"], results["predicted_size"] = zip(*results["all_sizes_results"].apply(lambda x: (np.max(x), np.argmax(x))))
         return results
 
-    def size_prob(self, test_df):
+    def size_prob(self, test_df, predict_type="expected"):
         results = test_df.copy()
-        results["size_prob"] = results.apply(lambda row: self.pdf(*row[["item_id", "user_id", "result", "size"]]), axis=1)
+        results["size_prob"] = results.apply(lambda row: self.pdf(*row[["item_id", "user_id", "result", "size"]], predict_type=predict_type), axis=1)
         return results

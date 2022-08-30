@@ -6,12 +6,12 @@ class HierarchicalFullModel:
         self.size_model = size_model
         self.return_status_model = return_status_model
 
-    def predict(self, test):
+    def predict(self, test, predict_type="expected"):
         return_status_result = self.return_status_model.predict(test)
         for result_description, result_label in [ ("fit", FIT_LABEL), ("large", LARGE_LABEL), ("small", SMALL_LABEL)]:
             all_same = test.copy()
             all_same["result"] = result_label
-            all_same_result = self.size_model.predict(all_same)
+            all_same_result = self.size_model.predict(all_same, predict_type=predict_type)
             return_status_result[f"predicted_prob_{result_description}"] = all_same_result["predicted_prob"]
             return_status_result[f"predicted_size_{result_description}"] = all_same_result["predicted_size"]
             return_status_result[f"all_sizes_results_{result_description}"] = all_same_result["all_sizes_results"]
