@@ -70,3 +70,17 @@ def full_model_stats(full_result):
     size_rmse(full_result)
     #print("-- size model stats --")
     #result_stats_size_model(full_result)
+
+def accuracy_vs_coverage(results, prediction_col, target_col, prediction_probability_column, nsamples = 50):
+    new_results = results[["user_id", "item_id",target_col, prediction_col, prediction_probability_column]].sort_values(prediction_probability_column)
+    records = results.shape[0]
+    partition_size = int(np.ceil(records/nsamples))
+    acc_vs_coverage = []
+    for i in range(1,nsamples+1):
+        split_size = min(i*partition_size, records)
+        data_for_accuracy = new_results.tail(split_size)
+        acc_vs_coverage.append({
+            "coverage": split_size/records,
+            "accuracy": (data_for_accuracy[target_col]==data_for_accuracy[prediction_col]).mean()
+        })
+    return acc_vs_coverage
