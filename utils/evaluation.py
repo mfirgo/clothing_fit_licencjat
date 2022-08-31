@@ -41,3 +41,32 @@ def categorical_mean_prob_stats_size_model(results, all_size_results="all_sizes_
         "mean_target_categorical_probability": categorical_prob.mean(),
         "mean_log_target_categorical_probability": np.log(categorical_prob).mean()
     }
+
+def target_prob_stats(full_result_just_target_prob):
+    print(f'mean target prob: {full_result_just_target_prob["target_prob"].mean()}, std: {full_result_just_target_prob["target_prob"].std()}')
+    print(f'mean log target prob: {np.log(full_result_just_target_prob["target_prob"]).replace({-np.inf:np.nan}).mean()}, std: {np.log(full_result_just_target_prob["target_prob"]).replace({-np.inf:np.nan}).std()}')
+    print(f'mean log target prob no replacement: {np.log(full_result_just_target_prob["target_prob"]).mean()}, std: {np.log(full_result_just_target_prob["target_prob"]).std()}')
+    print("number of ommited values (all, target_prob, size_prob, return_status_prob) :", (np.log(full_result_just_target_prob["target_prob"])==-np.inf).sum(), (full_result_just_target_prob["target_prob"]==0).sum(), (full_result_just_target_prob["size_prob"]==0).sum(),(full_result_just_target_prob["return_status_prob"]==0).sum())
+
+def full_model_accuracy_size(full_result, real_size="size", size_model_prediction="predicted_size_fit", full_model_prediction="predicted_pair_size"):
+    print("full model, size: ", sklearn.metrics.accuracy_score(full_result[real_size], full_result[full_model_prediction]))
+    print("size model, on fit: ", sklearn.metrics.accuracy_score(full_result[real_size], full_result[size_model_prediction]))
+
+def full_model_accuracy_return_status(full_result, real_status="result_original", return_model_prediction="", full_model_prediction="predicted_pair_return_status"):
+    print("full model, status: ", sklearn.metrics.accuracy_score(full_result[real_status], full_result[full_model_prediction]))
+    #print("status model: ", sklearn.metrics.accuracy_score(full_result[real_status], full_result["result"]))
+
+def size_rmse(full_result, real_size="size", size_model_prediction="predicted_size_fit", full_model_prediction="predicted_pair_size"):
+    print("full model, size: ", sklearn.metrics.mean_squared_error(full_result[real_size], full_result[full_model_prediction], squared=False))
+    print("size model, on fit: ", sklearn.metrics.mean_squared_error(full_result[real_size], full_result[size_model_prediction], squared=False))
+
+def full_model_stats(full_result):
+    #print("-- Target probability --")
+    #target_prob_stats(full_result)
+    print("-- accuracy --")
+    full_model_accuracy_size(full_result)
+    full_model_accuracy_return_status(full_result)
+    print("-- rmse --")
+    size_rmse(full_result)
+    #print("-- size model stats --")
+    #result_stats_size_model(full_result)

@@ -23,8 +23,8 @@ class HierarchicalFullModel:
         return_status_result["predicted_pair_size"] = return_status_result.apply(lambda row: row[f"predicted_size_{row['predicted_pair_return_status']}"], axis=1)
         return return_status_result
 
-    def get_target_prob(self, test):
+    def get_target_prob(self, test, predict_type="expected"):
         return_status_result = self.return_status_model.predict(test)
-        full_result = self.size_model.size_prob(return_status_result)
+        full_result = self.size_model.size_prob(return_status_result, predict_type=predict_type)
         full_result["target_prob"] = full_result["size_prob"] * full_result["return_status_prob"]
         return full_result
