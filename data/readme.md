@@ -1,0 +1,2 @@
+This directory is to store the original and processed versions of the datasets.  
+The datasets can be downloaded with kaggle api by running utils.data_preparation.download_dataset() or manually from https://www.kaggle.com/datasets/rmisra/clothing-fit-dataset-for-size-recommendation?select=modcloth_final_data.json
