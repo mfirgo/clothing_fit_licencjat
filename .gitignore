@@ -1,5 +1,5 @@
 /.ipynb_checkpoints
-/data
+data/*
 /models
 /clothing-fit-dataset-for-size-recommendation
 /__pycache__
@@ -7,6 +7,6 @@
 notes_and_tests.ipynb
 Notes_and_todo.md
 /wandb
-/saved-runs
+saved-runs/*
 /saved_runs*
 /results
