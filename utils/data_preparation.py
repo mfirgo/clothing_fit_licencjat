@@ -182,6 +182,8 @@ def create_data_from_config(config):
         split_data(config["dataset"], config["test_size"], config["random_state"])
     elif config["dataset_type"] in ["train-stratified", "test-stratified"]:
         stratified_split_data(config["dataset"], config["test_size"], config["random_state"])
+    elif config["dataset_type"] == "full":
+        get_processed_renttherunway_data()
     else:
         raise ValueError(f"This function does not support creating dataset_type {config['dataset_type']}")
 
