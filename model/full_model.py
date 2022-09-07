@@ -15,16 +15,26 @@ class HierarchicalFullModel:
             return_status_result[f"predicted_prob_{result_description}"] = all_same_result["predicted_prob"]
             return_status_result[f"predicted_size_{result_description}"] = all_same_result["predicted_size"]
             return_status_result[f"all_sizes_results_{result_description}"] = all_same_result["all_sizes_results"]
+            if predict_type=="sampled":
+                prob_sum = all_same_result["all_sizes_results"].apply(sum)
+                return_status_result[f"size_categorical_prob_{result_description}"] = all_same_result["size_prob"]/prob_sum
+                return_status_result[f"predicted_categorical_prob_{result_description}"] = all_same_result["predicted_prob"]/prob_sum
+                return_status_result[f"predicted_full_categorical_prob_{result_description}"] = return_status_result[result_label] * return_status_result[f"predicted_categorical_prob_{result_description}"]
             return_status_result[f"predicted_full_prob_{result_description}"] = return_status_result[result_label] * return_status_result[f"predicted_prob_{result_description}"]
         full_prob_columns = [f"predicted_full_prob_{result_desc}" for result_desc in ["fit", "small", "large"]]
+        if predict_type=="sampled":
+            full_prob_categorical_columns = [f"predicted_full_categorical_prob_{result_desc}" for result_desc in ["fit", "small", "large"]]
         full_prob_columns_to_return_status_desc = {f"predicted_full_prob_{result_desc}":result_desc for result_desc in ["fit", "small", "large"]}
         return_status_result["predicted_pair_prob"] = return_status_result[full_prob_columns].max(axis=1)
+        if predict_type=="sampled":
+            return_status_result["predicted_pair_categorical_prob"] = return_status_result[full_prob_categorical_columns].max(axis=1)
+            return_status_result["target_categorical_prob"] = return_status_result.apply(lambda row:  row["return_status_prob"]*row[f"size_categorical_prob_{row['result_original']}"], axis=1)
         return_status_result["predicted_pair_return_status"] = return_status_result[full_prob_columns].idxmax(axis=1).replace(full_prob_columns_to_return_status_desc)
         return_status_result["predicted_pair_size"] = return_status_result.apply(lambda row: row[f"predicted_size_{row['predicted_pair_return_status']}"], axis=1)
         return return_status_result
 
-    def get_target_prob(self, test):
+    def get_target_prob(self, test, predict_type="expected"):
         return_status_result = self.return_status_model.predict(test)
-        full_result = self.size_model.size_prob(return_status_result)
+        full_result = self.size_model.size_prob(return_status_result, predict_type=predict_type)
         full_result["target_prob"] = full_result["size_prob"] * full_result["return_status_prob"]
         return full_result
