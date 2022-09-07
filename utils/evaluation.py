@@ -60,8 +60,12 @@ def size_rmse(full_result, real_size="size", size_model_prediction="predicted_si
     print("full model, size: ", sklearn.metrics.mean_squared_error(full_result[real_size], full_result[full_model_prediction], squared=False))
     print("size model, on fit: ", sklearn.metrics.mean_squared_error(full_result[real_size], full_result[size_model_prediction], squared=False))
 
-def full_model_stats(full_result):
-    #print("-- Target probability --")
+def full_model_stats(full_result, prob_column="target_categorical_prob"):
+    print("-- Target probability --")
+    print(f'mean target prob: {full_result[prob_column].mean()}, std: {full_result[prob_column].std()}')
+    print(f'mean log target prob: {np.log(full_result[prob_column]).replace({-np.inf:np.nan}).mean()}, std: {np.log(full_result[prob_column]).replace({-np.inf:np.nan}).std()}')
+    print(f'mean log target prob no replacement: {np.log(full_result[prob_column]).mean()}, std: {np.log(full_result[prob_column]).std()}')
+    print("number of ommited values (all, target_prob, size_prob, return_status_prob) :", (np.log(full_result[prob_column])==-np.inf).sum(), (full_result[prob_column]==0).sum())
     #target_prob_stats(full_result)
     print("-- accuracy --")
     full_model_accuracy_size(full_result)
